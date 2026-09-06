@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fc78c9">
+  <meta name="description" content="Acceso a los paneles administrativos de Vikingos Indira Gourmet.">
+  <title>Paneles administrativos | Vikingos Indira</title>
+  <link rel="icon" type="image/png" href="images/favicon1.png">
+  <link rel="apple-touch-icon" href="images/favicon1.png">
+
+  <style>
+    :root {
+      color-scheme: light;
+      --pink: #fc78c9;
+      --pink-dark: #c92d91;
+      --pink-soft: #fff0f9;
+      --green: #2f8d45;
+      --green-soft: #eef9f0;
+      --ink: #21131d;
+      --muted: #725f6c;
+      --surface: rgba(255, 255, 255, 0.92);
+      --line: rgba(80, 35, 66, 0.11);
+      --shadow: 0 24px 70px rgba(112, 32, 88, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: #fff8fc;
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: 100svh;
+      margin: 0;
+      padding: max(24px, env(safe-area-inset-top)) 18px max(24px, env(safe-area-inset-bottom));
+      display: grid;
+      place-items: center;
+      overflow-x: hidden;
+      font-family: Inter, Poppins, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 8%, rgba(252, 120, 201, 0.24), transparent 33%),
+        radial-gradient(circle at 92% 88%, rgba(47, 141, 69, 0.16), transparent 31%),
+        linear-gradient(145deg, #fffafd 0%, #fff3fa 48%, #f6fff7 100%);
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      z-index: 0;
+      width: 190px;
+      height: 190px;
+      border: 1px solid rgba(252, 120, 201, 0.2);
+      border-radius: 48px;
+      pointer-events: none;
+      transform: rotate(28deg);
+    }
+
+    body::before {
+      top: -105px;
+      right: -68px;
+    }
+
+    body::after {
+      bottom: -120px;
+      left: -75px;
+      border-color: rgba(47, 141, 69, 0.18);
+    }
+
+    .access-card {
+      position: relative;
+      z-index: 1;
+      width: min(100%, 520px);
+      padding: clamp(26px, 6vw, 44px);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .brand {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 26px;
+    }
+
+    .brand img {
+      display: block;
+      width: min(100%, 310px);
+      height: auto;
+    }
+
+    .intro {
+      margin-bottom: 25px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 10px;
+      color: var(--pink-dark);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 4px rgba(47, 141, 69, 0.12);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.65rem, 7vw, 2.35rem);
+      line-height: 1.08;
+      letter-spacing: -0.045em;
+    }
+
+    .intro p:last-child {
+      margin: 12px auto 0;
+      max-width: 37ch;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.55;
+    }
+
+    .locations {
+      display: grid;
+      gap: 13px;
+    }
+
+    .location-link {
+      min-height: 76px;
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr) 24px;
+      align-items: center;
+      gap: 14px;
+      padding: 13px 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      color: var(--ink);
+      background: #fff;
+      box-shadow: 0 7px 20px rgba(82, 35, 68, 0.07);
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    }
+
+    .location-link:hover {
+      transform: translateY(-2px);
+      border-color: rgba(252, 120, 201, 0.55);
+      background: linear-gradient(105deg, #fff 55%, var(--pink-soft));
+      box-shadow: 0 12px 26px rgba(136, 42, 107, 0.13);
+    }
+
+    .location-link:active {
+      transform: translateY(0) scale(0.985);
+    }
+
+    .location-link:focus-visible {
+      outline: 3px solid rgba(47, 141, 69, 0.35);
+      outline-offset: 3px;
+    }
+
+    .pin {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: 15px;
+      color: var(--pink-dark);
+      background: var(--pink-soft);
+    }
+
+    .location-link:nth-child(2) .pin {
+      color: var(--green);
+      background: var(--green-soft);
+    }
+
+    .location-link:nth-child(3) .pin {
+      color: #fff;
+      background: linear-gradient(135deg, var(--pink), var(--pink-dark));
+    }
+
+    .pin svg,
+    .arrow svg {
+      display: block;
+      width: 22px;
+      height: 22px;
+    }
+
+    .location-copy {
+      min-width: 0;
+    }
+
+    .location-name {
+      display: block;
+      font-size: 1rem;
+      font-weight: 800;
+      line-height: 1.25;
+    }
+
+    .location-detail {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.25;
+    }
+
+    .arrow {
+      display: grid;
+      place-items: center;
+      color: var(--pink-dark);
+      transition: transform 180ms ease;
+    }
+
+    .location-link:hover .arrow {
+      transform: translateX(3px);
+    }
+
+    .security-note {
+      margin: 22px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    .security-note svg {
+      flex: 0 0 auto;
+      width: 16px;
+      height: 16px;
+      color: var(--green);
+    }
+
+    @media (max-width: 420px) {
+      body {
+        padding-inline: 12px;
+      }
+
+      .access-card {
+        padding: 25px 16px;
+        border-radius: 24px;
+      }
+
+      .brand {
+        margin-bottom: 22px;
+      }
+
+      .location-link {
+        grid-template-columns: 44px minmax(0, 1fr) 20px;
+        gap: 11px;
+        padding: 12px;
+      }
+
+      .pin {
+        width: 44px;
+        height: 44px;
+        border-radius: 13px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="access-card">
+    <div class="brand">
+      <img src="images/logo.png" alt="Vikingos Indira Gourmet">
+    </div>
+
+    <header class="intro">
+      <p class="eyebrow">Acceso privado</p>
+      <h1>Paneles administrativos</h1>
+      <p>Selecciona la sede que deseas administrar.</p>
+    </header>
+
+    <nav class="locations" aria-label="Paneles administrativos por sede">
+      <a class="location-link" href="https://devnnex.github.io/VIKINGOS-INDIRA.COM/admin.html" aria-label="Abrir panel administrativo de Barrancabermeja">
+        <span class="pin" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/>
+            <circle cx="12" cy="10" r="2.5"/>
+          </svg>
+        </span>
+        <span class="location-copy">
+          <span class="location-name">Barrancabermeja</span>
+          <span class="location-detail">Abrir panel de la sede</span>
+        </span>
+        <span class="arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </span>
+      </a>
+
+      <a class="location-link" href="https://devnnex.github.io/VIKINGOS-INDIRA-BUCARAMANGA.COM/admin.html" aria-label="Abrir panel administrativo de Bucaramanga">
+        <span class="pin" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/>
+            <circle cx="12" cy="10" r="2.5"/>
+          </svg>
+        </span>
+        <span class="location-copy">
+          <span class="location-name">Bucaramanga</span>
+          <span class="location-detail">Abrir panel de la sede</span>
+        </span>
+        <span class="arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </span>
+      </a>
+
+      <a class="location-link" href="https://devnnex.github.io/VIKINGOS-INDIRA-CANAVERAL-BGA.COM/admin.html" aria-label="Abrir panel administrativo de Cañaveral, Bucaramanga">
+        <span class="pin" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/>
+            <circle cx="12" cy="10" r="2.5"/>
+          </svg>
+        </span>
+        <span class="location-copy">
+          <span class="location-name">Cañaveral · Bucaramanga</span>
+          <span class="location-detail">Abrir panel de la sede</span>
+        </span>
+        <span class="arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </span>
+      </a>
+    </nav>
+
+    <p class="security-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect width="16" height="11" x="4" y="10" rx="2"/>
+        <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+      </svg>
+      Usa este acceso únicamente para la administración de las sedes.
+    </p>
+  </main>
+</body>
+</html>
