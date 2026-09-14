@@ -126,6 +126,33 @@ let checkoutRadioEventsBound = false;
 let soldOutModalOpen = false;
 let availabilityFetchInFlight = false;
 
+function setupCartAttentionAnimation() {
+  if (!openCartBtn || !cartCountEl || document.getElementById('cart-attention-style')) return;
+
+  const style = document.createElement('style');
+  style.id = 'cart-attention-style';
+  style.textContent = `
+    @keyframes vikingos-cart-pulse {
+      0%, 100% { transform: scale(1); background: #ffffff; box-shadow: 0 4px 12px rgba(252, 120, 201, 0.18); }
+      50% { transform: scale(1.12); background: #fc78c9; box-shadow: 0 8px 20px rgba(233, 30, 99, 0.42); }
+    }
+    @keyframes vikingos-cart-count-contrast {
+      0%, 100% { background: #ffffff; color: #111111; }
+      50% { background: #fc78c9; color: #ffffff; }
+    }
+    #open-cart.cart-attention-pulse {
+      animation: vikingos-cart-pulse 1.8s ease-in-out infinite;
+      transform-origin: center;
+    }
+    #open-cart.cart-attention-pulse #cart-count {
+      animation: vikingos-cart-count-contrast 1.8s ease-in-out infinite;
+      font-weight: 900;
+    }
+  `;
+  document.head.appendChild(style);
+  openCartBtn.classList.add('cart-attention-pulse');
+}
+
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -255,6 +282,7 @@ function init(){
   renderCategories();
   bindEvents();
   refreshCartUI();
+  setupCartAttentionAnimation();
   setActiveCategory(activeCategory);
   const availabilityPromise = fetchAvailability();
   updateCheckoutFieldStates();
@@ -800,8 +828,8 @@ function refreshCartUI() {
   cartItemsEl.innerHTML = '';
   if (cart.length === 0) {
     cartItemsEl.innerHTML = '<div class="empty">Tu carrito está vacío </div>';
-    // cartSubtotalEl.textContent = '$0';
-    // cartDeliveryEl.textContent = '$0';
+    if (cartSubtotalEl) cartSubtotalEl.textContent = '';
+    if (cartDeliveryEl) cartDeliveryEl.textContent = '$0';
     cartTotalEl.textContent = '$0';
     updateCartBadge();
     return;
@@ -1679,14 +1707,17 @@ function showCartHintToast() {
   // Auto cerrar
   setTimeout(() => {
     toast.classList.remove('show');
-    setTimeout(() => toast.remove(), 120);
+    setTimeout(() => {
+      toast.remove();
+      cartDrawer.classList.add('hidden');
+      cartDrawer.setAttribute('aria-hidden', 'true');
+    }, 120);
   }, 1800);
 }
 
 
 
 // ============Fin de codigo de Descarga QR=================
-
 
 
 
