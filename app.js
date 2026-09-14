@@ -150,7 +150,7 @@ function setupCartAttentionAnimation() {
     }
   `;
   document.head.appendChild(style);
-  openCartBtn.classList.add('cart-attention-pulse');
+  openCartBtn.classList.toggle('cart-attention-pulse', Number(cartCountEl.textContent) > 0);
 }
 
 function delay(ms) {
@@ -793,6 +793,7 @@ function updateCartBadge() {
   
   // Contador del header (el que ya tienes)
   if(cartCountEl) cartCountEl.textContent = count;
+  if(openCartBtn) openCartBtn.classList.toggle('cart-attention-pulse', count > 0);
   
   // Nuevo contador de la burbuja flotante
   const floatingCountEl = document.querySelector('.bubble-count');
@@ -953,7 +954,6 @@ function refreshCartUI() {
 openCartBtn.addEventListener('click', () => {
   cartDrawer.classList.remove('hidden');
   cartDrawer.setAttribute('aria-hidden', 'false');
-  showCartHintToast(); // ✅ toast verde junto a la X
 });
 
 closeCartBtn.addEventListener('click', ()=>{ cartDrawer.classList.add('hidden'); cartDrawer.setAttribute('aria-hidden','true'); });
@@ -1718,7 +1718,6 @@ function showCartHintToast() {
 
 
 // ============Fin de codigo de Descarga QR=================
-
 
 
 
