@@ -1147,8 +1147,36 @@ function clearCartAfterWhatsAppOpen() {
   resetClientForm();
 }
 
+function isInstagramInAppBrowser() {
+  const userAgent = String(navigator.userAgent || '');
+  return /Instagram/i.test(userAgent);
+}
+
+function resetOrderUiForInstagram(submitBtn) {
+  clearCartAfterWhatsAppOpen();
+
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Confirmar pedido';
+  }
+
+  checkoutModal.classList.add('hidden');
+  checkoutModal.classList.remove('show');
+  checkoutModal.setAttribute('aria-hidden', 'true');
+  cartDrawer.classList.add('hidden');
+  cartDrawer.setAttribute('aria-hidden', 'true');
+  floatingCart?.classList.add('hidden');
+  document.querySelector('.product-overlay')?.remove();
+
+  if (searchInput) searchInput.value = '';
+  activeCategory = 'Vikingos';
+  setActiveCategory(activeCategory);
+  window.scrollTo(0, 0);
+}
+
 function openWhatsAppWithFallback(primaryUrl, fallbackUrl, submitBtn) {
   let finished = false;
+  const instagramBrowser = isInstagramInAppBrowser();
 
   const markFinished = () => {
     if (finished) return;
@@ -1162,10 +1190,17 @@ function openWhatsAppWithFallback(primaryUrl, fallbackUrl, submitBtn) {
     submitBtn.textContent = 'Confirmar pedido';
   };
 
-  window.addEventListener('pagehide', markFinished, { once: true });
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) markFinished();
-  }, { once: true });
+  if (instagramBrowser) {
+    // El navegador interno de Instagram puede conservar la pagina activa al
+    // abrir WhatsApp. La dejamos lista desde ahora para cuando el usuario vuelva.
+    finished = true;
+    resetOrderUiForInstagram(submitBtn);
+  } else {
+    window.addEventListener('pagehide', markFinished, { once: true });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) markFinished();
+    }, { once: true });
+  }
 
   try {
     window.location.assign(primaryUrl);
@@ -1174,7 +1209,7 @@ function openWhatsAppWithFallback(primaryUrl, fallbackUrl, submitBtn) {
   }
 
   setTimeout(() => {
-    if (document.hidden || finished) return;
+    if (instagramBrowser || document.hidden || finished) return;
     restoreButton();
     if (typeof Swal !== 'undefined') {
       Swal.fire({
@@ -1651,8 +1686,6 @@ function showCartHintToast() {
 
 
 // ============Fin de codigo de Descarga QR=================
-
-
 
 
 
