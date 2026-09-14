@@ -43,6 +43,54 @@ const products = [
   { id: 'AAAgua3', category: 'Aguas', title: 'Botella agua cristal 600ml con gas', price: 2500, desc: 'Botella de agua pura y refrescante con gas 600ml.', image: 'images/aguaBotella3.png' },
 ];
 
+// ---------- Calculos exactos del pedido ----------
+// Todos los totales se calculan en unidades menores para evitar decimales
+// imprecisos y siempre toman el precio vigente del catalogo como autoridad.
+const MONEY_SCALE = 100;
+
+function toMoneyUnits(value) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount < 0) return 0;
+  return Math.round(amount * MONEY_SCALE);
+}
+
+function fromMoneyUnits(value) {
+  return value / MONEY_SCALE;
+}
+
+function normalizeQuantity(value) {
+  const quantity = Number(value);
+  return Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 1;
+}
+
+function getItemUnitPriceUnits(item) {
+  const catalogProduct = products.find(product => product.id === item?.productId);
+  const hasKnownBasePrice = Boolean(catalogProduct) || Number.isFinite(Number(item?.basePrice));
+
+  // Los items antiguos guardaban en price el precio final con adiciones.
+  // Si no conocemos su precio base, respetamos ese precio sin sumar dos veces.
+  if (!hasKnownBasePrice) return toMoneyUnits(item?.price);
+
+  const basePrice = catalogProduct?.price ?? item.basePrice;
+  const extrasUnits = (Array.isArray(item?.extras) ? item.extras : []).reduce((sum, extra) => {
+    return sum + toMoneyUnits(extra?.price) * normalizeQuantity(extra?.qty);
+  }, 0);
+
+  return toMoneyUnits(basePrice) + extrasUnits;
+}
+
+function calculateItemTotal(item) {
+  return fromMoneyUnits(getItemUnitPriceUnits(item) * normalizeQuantity(item?.qty));
+}
+
+function calculateCartSubtotal(items = cart) {
+  const totalUnits = items.reduce((sum, item) => {
+    return sum + getItemUnitPriceUnits(item) * normalizeQuantity(item?.qty);
+  }, 0);
+
+  return fromMoneyUnits(totalUnits);
+}
+
 const categories = [...new Set(products.map(p=>p.category))];
 
 // ---------- Estado ----------
@@ -629,7 +677,11 @@ function openProductModal(id, cartIndex = null) {
   });
 
   // === AGREGAR O ACTUALIZAR EN EL CARRITO ===
-  overlay.querySelector(".add-btn").addEventListener("click", () => {
+  const addButton = overlay.querySelector(".add-btn");
+  addButton.addEventListener("click", () => {
+    // Un doble toque rapido nunca debe registrar el producto dos veces.
+    if (addButton.dataset.processing === 'true') return;
+
     const status = readCachedAvailability();
     if (!isProductAvailable(p.id, status)) {
       if (cartIndex !== null) {
@@ -643,11 +695,22 @@ function openProductModal(id, cartIndex = null) {
       return;
     }
 
+    addButton.dataset.processing = 'true';
+    addButton.disabled = true;
+
     const extras = (p.extras || []).map((e, i) => ({ name: e.name, price: e.price, qty: extrasQty[i] })).filter(e => e.qty > 0);
     const extrasSum = extras.reduce((a, e) => a + e.price * e.qty, 0);
     const finalUnitPrice = p.price + extrasSum;
 
-    const item = { productId: p.id, title: p.title, price: finalUnitPrice, qty, image: p.image, extras };
+    const item = {
+      productId: p.id,
+      title: p.title,
+      basePrice: p.price,
+      price: finalUnitPrice,
+      qty: normalizeQuantity(qty),
+      image: p.image,
+      extras
+    };
 
     if (cartIndex !== null) {
       cart[cartIndex] = item; // actualizar producto existente
@@ -672,6 +735,8 @@ function openProductModal(id, cartIndex = null) {
 
 // Agregar producto al carrito
 function addToCart(item) {
+  item.qty = normalizeQuantity(item.qty);
+
   // Si ya existe el mismo producto con las mismas adiciones, solo aumentar cantidad
   const existing = cart.find(c => 
     c.productId === item.productId && 
@@ -679,7 +744,7 @@ function addToCart(item) {
   );
 
   if (existing) {
-    existing.qty += item.qty;
+    existing.qty = normalizeQuantity(existing.qty) + item.qty;
   } else {
     cart.push(item);
   }
@@ -696,7 +761,7 @@ function persistCart() {
 // Actualizar contador del ícono del carrito
 // 1. Modifica tu función actual para que actualice AMBOS contadores
 function updateCartBadge() {
-  const count = cart.reduce((sum, i) => sum + i.qty, 0);
+  const count = cart.reduce((sum, i) => sum + normalizeQuantity(i.qty), 0);
   
   // Contador del header (el que ya tienes)
   if(cartCountEl) cartCountEl.textContent = count;
@@ -745,14 +810,16 @@ function refreshCartUI() {
   let subtotal = 0;
 
   cart.forEach((item, idx) => {
-    // --- CALCULAR PRECIO REAL DEL ITEM CON EXTRAS ---
-    const extrasTotal = item.extras?.reduce((sum, e) => sum + e.price * e.qty, 0) || 0;
-    const itemUnitPrice = item.price - extrasTotal; // precio base
-    const itemTotal = (itemUnitPrice + extrasTotal) * item.qty;
+    const itemQuantity = normalizeQuantity(item.qty);
+    const itemTotal = calculateItemTotal(item);
     subtotal += itemTotal;
 
     const extrasText = item.extras?.length
-      ? item.extras.map(e => `+ ${e.name} x${e.qty} ($${numberWithCommas(e.price * e.qty)})`).join('<br>')
+      ? item.extras.map(e => {
+          const extraQuantity = normalizeQuantity(e.qty) * itemQuantity;
+          const extraTotal = fromMoneyUnits(toMoneyUnits(e.price) * extraQuantity);
+          return `+ ${e.name} x${extraQuantity} ($${numberWithCommas(extraTotal)})`;
+        }).join('<br>')
       : '';
 
     const div = document.createElement('div');
@@ -764,7 +831,7 @@ function refreshCartUI() {
         ${extrasText ? `<small>${extrasText}</small>` : ''}
         <div class="qty-controls">
           <button class="minus">−</button>
-          <span>${item.qty}</span>
+          <span>${itemQuantity}</span>
           <button class="plus">+</button>
         </div>
       </div>
@@ -778,14 +845,14 @@ function refreshCartUI() {
 
     // --- CONTROL DE CANTIDAD ---
     div.querySelector('.plus').addEventListener('click', () => {
-      item.qty++;
+      item.qty = normalizeQuantity(item.qty) + 1;
       persistCart();
       refreshCartUI();
     });
 
     div.querySelector('.minus').addEventListener('click', () => {
-      if (item.qty > 1) {
-        item.qty--;
+      if (normalizeQuantity(item.qty) > 1) {
+        item.qty = normalizeQuantity(item.qty) - 1;
       } else {
         cart.splice(idx, 1);
       }
@@ -888,7 +955,7 @@ function openCheckout() {
 
 
   // 🔹 Recalcular subtotal actual (incluyendo extras)
-const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+const subtotal = calculateCartSubtotal();
 
 
   const delivery = 0; // por defecto
@@ -946,7 +1013,7 @@ function updateCheckoutTotals() {
   if (addressInput) addressInput.required = method === 'domicilio';
 
   // 🧾 Heredamos los valores que ya calcula refreshCartUI()
-  const subtotal = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
+  const subtotal = calculateCartSubtotal();
 
   // 🚚 Si el método es domicilio, se suma el envío
   const delivery = method === 'domicilio' && subtotal > 0 ? DELIVERY_FEE : 0;
@@ -1186,18 +1253,22 @@ checkoutForm.addEventListener('submit', (e) => {
   textParts.push('');
   textParts.push('🍨 *Detalle del pedido:*');
 
-  let subtotal = 0;
+  const subtotal = calculateCartSubtotal();
 
   cart.forEach(item => {
+    const itemQuantity = normalizeQuantity(item.qty);
     // Calcular precio de extras individualmente
     const extras = item.extras || [];
-    const extrasLines = extras.map(e => `   ➕ ${e.qty}x ${e.name} ($${numberWithCommas(e.price * e.qty)})`).join('\n');
+    const extrasLines = extras.map(e => {
+      const extraQuantity = normalizeQuantity(e.qty) * itemQuantity;
+      const extraTotal = fromMoneyUnits(toMoneyUnits(e.price) * extraQuantity);
+      return `   ➕ ${extraQuantity}x ${e.name} ($${numberWithCommas(extraTotal)})`;
+    }).join('\n');
 
-    const itemTotal = item.price * item.qty;
-    subtotal += itemTotal;
+    const itemTotal = calculateItemTotal(item);
 
     // Mostrar solo precio del artículo base + extras detallados
-    textParts.push(`${item.qty}x ${item.title} — *$${numberWithCommas(item.price * item.qty)}*`);
+    textParts.push(`${itemQuantity}x ${item.title} — *$${numberWithCommas(itemTotal)}*`);
     if (extrasLines) textParts.push(extrasLines);
 
     // Si hay toppings removidos
@@ -1580,7 +1651,6 @@ function showCartHintToast() {
 
 
 // ============Fin de codigo de Descarga QR=================
-
 
 
 
